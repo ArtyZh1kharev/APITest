@@ -5,25 +5,32 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, String, Column, CheckConstraint
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Relationship
+from sqlalchemy.orm import relationship
 
-#Creating tables for buidling + area 
+from sqlalchemy import create_engine
+
+#Creating classes for buidling + area 
 Base = declarative_base()
 
 class Building(Base):
     __tablename__ = 'buildings'
     id = Column(Integer, primary_key = True)
     name = Column(String(255), unique=True)
-    areas = Relationship("Area", back_populates='buildings')
+    areas = relationship("Area", back_populates='building')
     
 class Area(Base):
     __tablename__ = 'areas'
     id = Column(Integer, primary_key = True)
     name = Column(String(255))
-    light_value = Column(Integer, CheckConstraint('lightvalue >= 0 AND lighvalue <= 100'))
+    light_value = Column(Integer, CheckConstraint('light_value >= 0 AND light_value <= 100'))
     temp_value = Column(Integer, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
     building_id = Column(Integer, ForeignKey('buildings.id'))
-    building = Relationship("Building", back_populates='areas')
+    building = relationship("Building", back_populates='areas')
+
+#Creating the tables
+database_url = 'sqlite:///./building.db'
+engine = create_engine(database_url)
+Base.metadata.create_all(bind=engine)
 
 #Creating the fastapi app side
 
