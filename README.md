@@ -9,10 +9,15 @@ DATABASE: SQLITE
 
 BEFORE RUNNING THE APPLICATION:
  pip install fastapi 
+ 
  pip install fastapi.exceptions
+ 
  pip install sqlalchemy
+ 
  pip install sqlalchemy.orm
+ 
  pip isntall pydantic
+ 
  pip install uvicorn
  
 RUNNING THE APPLICATION: uvicorn main:app --reload 
