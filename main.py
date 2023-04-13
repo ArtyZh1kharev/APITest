@@ -1,3 +1,23 @@
+#API TEST SCRIPT FOR SIMPLE MODELLING OF TEMPREATURE + LIGHT ADJUSTMENT IN BUILDINGS
+#------------
+#LANGUAGE: PYTHON3 
+#ORM: SQLALCHEMY
+#DATABASE: SQLITE
+#------------
+#BEFORE RUNNING THE APPLICATION:
+# pip install fastapi 
+# pip install fastapi.exceptions
+# pip install sqlalchemy
+# pip install sqlalchemy.orm
+# pip isntall pydantic
+# pip install uvicorn
+#------------
+#RUNNING THE APPLICATION: uvicorn main:app --reload 
+#POSTMAN TESTING: JSON FORMAT FOR POST/PATCH REQUESTS, USING SCHEMA
+#------------
+#FULL DOCUMENTATION AVAILABLE AT http://127.0.0.1:8000/docs or http://localhost:8000/docs 
+
+
 from fastapi import FastAPI
 import uvicorn
 from sqlalchemy.ext.declarative import declarative_base
@@ -151,4 +171,4 @@ def delete_building_area(building_id: int, area_id:int, db: Session = Depends(ge
         db.delete(db_area)
         db.commit()
         db.flush()
-    return {"message":f"Deleted area {area_id} in building {building_id}."}
+        return {"message":f"Deleted area {area_id} in building {building_id}."}
