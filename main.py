@@ -15,40 +15,40 @@ def get_buildings():
     return {"message":"Buildings"}
 
 @app.get("/buildings/{building_id}")
-def get_building():
+def get_building(building_id: int):
     return {"message":"Buidling with building id"}
 
 @app.get("/buildings/{building_id}/areas")
-def get_building_areas():
+def get_building_areas(building_id: int):
     return {"message":"Building areas"}
 
 @app.get("/buildings/{building_id}/areas/{area_id}")
-def get_buildiing_area():
+def get_building_area(building_id: int, area_id: int):
     return {"message":"Building area with area id"}
 
 #ADD 
-@app.post("/buildings/{building_id}")
+@app.post("/buildings")
 def create_building():
     return {"message":"Create buidling"}
 
-@app.post("/buildings/{building_id}/areas/{area_id}")
-def create_buidling_area():
+@app.post("/buildings/{building_id}/areas")
+def create_building_area():
     return {"message":"Create buidling area"}
 
 #UPDATE
 @app.put("/buildings/{building_id}")
-def update_building(id: int):
+def update_building(building_id: int):
     return {"message ":"Update building info"}
 
 @app.put("/buildings/{building_id}/areas/{area_id}")
-def update_area(id: int):
+def update_area(building_id: int):
     return {"message":"Update building area info"}
 
 #DELETE 
 @app.delete("/buildings/{building_id}")
-def delete_building(id: int):
+def delete_building(building_id: int):
     return {"message":"Delete buidling"}
 
 @app.delete("/buildings/{building_id}/area/{area_id}")
-def delete_building_area(id: int):
+def delete_building_area(building_id: int):
     return {"message":"Delete buidling area"}
