@@ -9,6 +9,11 @@ from sqlalchemy.orm import relationship
 
 from sqlalchemy import create_engine
 
+from sqlalchemy.orm import sessionmaker 
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from fastapi import Depends
+
 #Creating classes for buidling + area 
 Base = declarative_base()
 
@@ -22,8 +27,8 @@ class Area(Base):
     __tablename__ = 'areas'
     id = Column(Integer, primary_key = True)
     name = Column(String(255))
-    light_value = Column(Integer, CheckConstraint('light_value >= 0 AND light_value <= 100'))
-    temp_value = Column(Integer, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
+    light_value = Column(Integer)#, CheckConstraint('light_value >= 0 AND light_value <= 100'))
+    temp_value = Column(Integer)#, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
     building_id = Column(Integer, ForeignKey('buildings.id'))
     building = relationship("Building", back_populates='areas')
 
@@ -32,9 +37,57 @@ database_url = 'sqlite:///./building.db'
 engine = create_engine(database_url)
 Base.metadata.create_all(bind=engine)
 
-#Creating the fastapi app side
+#Creating session factory 
+SessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine)
 
+#Setting up the dependency function
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db 
+    finally:
+        db.close()
+
+#Creating pydantic schema for request and responce 
+class CreateBuilding(BaseModel):
+    name: str
+
+class CreateArea(BaseModel):
+    name: str
+    light_value: int
+    temp_value: int
+    building_id: int
+
+class AreaTemp(BaseModel):
+    temp_value: int
+
+class AreaLight(BaseModel):
+    light_value: int
+
+class AreaLightTemp(BaseModel):
+    light_value: int
+    temp_value: int
+    
+
+#Creating the fastapi app side
 app = FastAPI()
+
+#ADD 
+@app.post("/buildings", response_model=CreateBuilding)
+def create_building(building: CreateBuilding, db: Session = Depends(get_db)):
+    db_building = Building(**building.dict())
+    db.add(db_building)
+    db.commit()
+    db.refresh(db_building)
+    return CreateBuilding(**db_building.__dict__)
+
+@app.post("/buildings/{building_id}/areas", response_model=CreateArea)
+def create_building_area(area: CreateArea, db: Session = Depends(get_db)):
+    db_area = Area(**area.dict())
+    db.add_all([db_area])
+    db.commit()
+    db.refresh(db_area)
+    return CreateArea(**db_area.__dict__)
 
 #GET
 @app.get("/")
@@ -42,44 +95,58 @@ def root():
     return {"message":"Main Page for APITest app."}
 
 @app.get("/buildings")
-def get_buildings():
-    return {"message":"Buildings"}
+def get_buildings(db: Session = Depends(get_db)):
+    buildings = db.query(Building).all()
+    return buildings
 
 @app.get("/buildings/{building_id}")
-def get_building(building_id: int):
-    return {"message":"Buidling with building id"}
+def get_building(building_id: int,db: Session = Depends(get_db)):
+    building = db.query(Building).filter(Building.id == building_id).first()
+    return building
 
 @app.get("/buildings/{building_id}/areas")
-def get_building_areas(building_id: int):
-    return {"message":"Building areas"}
+def get_building_areas(building_id: int, db: Session = Depends(get_db)):
+    areas = db.query(Area).all()
+    return areas
 
 @app.get("/buildings/{building_id}/areas/{area_id}")
-def get_building_area(building_id: int, area_id: int):
-    return {"message":"Building area with area id"}
+def get_building_area(building_id: int, area_id: int,db: Session = Depends(get_db)):
+    area = db.query(Area).filter(Area.id == area_id).first()
+    return area
 
-#ADD 
-@app.post("/buildings")
-def create_building():
-    return {"message":"Create buidling"}
 
-@app.post("/buildings/{building_id}/areas")
-def create_building_area():
-    return {"message":"Create buidling area"}
+#UPDATE the light values
+@app.patch("/buildings/{building_id}/areas/{area_id}")
+def update_area(building_id: int, area_id: int,area: AreaLight, db: Session = Depends(get_db)):
+    db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
+    db_area.light_value = area.light_value
+    db.commit()
+    db.refresh(db_area)
+    return db_area
 
-#UPDATE
-@app.put("/buildings/{building_id}")
-def update_building(building_id: int):
-    return {"message ":"Update building info"}
 
-@app.put("/buildings/{building_id}/areas/{area_id}")
-def update_area(building_id: int):
-    return {"message":"Update building area info"}
+#UPDATE the tempreature values
+@app.patch("/buildings/{building_id}/areas/{area_id}")
+def update_area(building_id: int, area_id: int,area: AreaTemp, db: Session = Depends(get_db)):
+    db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
+    db_area.temp_value = area.temp_value
+    db.commit()
+    db.refresh(db_area)
+    return db_area
 
 #DELETE 
 @app.delete("/buildings/{building_id}")
-def delete_building(building_id: int):
-    return {"message":"Delete buidling"}
+def delete_building(building_id: int, db: Session = Depends(get_db)):
+    db_building = db.query(Building).filter(Building.id == building_id).first()
+    db.delete(db_building)
+    db.commit()
+    db.flush()
+    return {"message":f"Deleted building {building_id}."}
 
-@app.delete("/buildings/{building_id}/area/{area_id}")
-def delete_building_area(building_id: int):
-    return {"message":"Delete buidling area"}
+@app.delete("/buildings/{building_id}/areas/{area_id}")
+def delete_building_area(building_id: int, area_id:int, db: Session = Depends(get_db)):
+    db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
+    db.delete(db_area)
+    db.commit()
+    db.flush()
+    return {"message":f"Deleted area {area_id} in building {building_id}."}
