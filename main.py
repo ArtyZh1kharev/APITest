@@ -54,12 +54,6 @@ class CreateArea(BaseModel):
     temp_value: int
     building_id: int
 
-class AreaTemp(BaseModel):
-    temp_value: int
-
-class AreaLight(BaseModel):
-    light_value: int
-
 class AreaLightTemp(BaseModel):
     light_value: int
     temp_value: int
@@ -121,29 +115,18 @@ def get_building_area(building_id: int, area_id: int,db: Session = Depends(get_d
     return area
 
 
-#UPDATE the light values
+#UPDATE the light and temp values
 @app.patch("/buildings/{building_id}/areas/{area_id}")
-def update_area(building_id: int, area_id: int,area: AreaLight, db: Session = Depends(get_db)):
+def update_area(building_id: int, area_id: int,area: AreaLightTemp, db: Session = Depends(get_db)):
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
     if db_area is None:
         raise HTTPException(status_code=404)
     if db_area.light_value >= 100 or db_area.light_value < -1:
         raise ValueError("Invalid value. Expected 100 >= int(value) >= 0.")
-    db_area.light_value = area.light_value
-    db.commit()
-    db.refresh(db_area)
-    return db_area
-
-
-#UPDATE the tempreature values
-@app.patch("/buildings/{building_id}/areas/{area_id}")
-def update_area(building_id: int, area_id: int,area: AreaTemp, db: Session = Depends(get_db)):
-    db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
-    if db_area is None:
-        raise HTTPException(status_code=404)
     if db_area.temp_value >= 40 or db_area.temp_value < -1:
         raise ValueError("Invalid value. Expected 40 >= int(value) >= 0.")
     db_area.temp_value = area.temp_value
+    db_area.light_value = area.light_value
     db.commit()
     db.refresh(db_area)
     return db_area
