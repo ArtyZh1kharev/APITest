@@ -80,9 +80,11 @@ def create_building(building: CreateBuilding, db: Session = Depends(get_db)):
 @app.post("/buildings/{building_id}/areas", response_model=CreateArea)
 def create_building_area(area: CreateArea, db: Session = Depends(get_db)):
     db_area = Area(**area.dict())
-    if db_area.temp_value >= 40 or db_area.temp_value <= 0:
+    if db_area is None:
+        raise HTTPException(status_code=404)
+    if db_area.temp_value >= 40 or db_area.temp_value < -1:
         raise ValueError("Invalid value. Expected 40 >= value >= 0.")
-    if db_area.light_value > 100 or db_area.light_value < 0:
+    if db_area.light_value > 100 or db_area.light_value < -1:
         raise ValueError("Invalid value. Expected 100 >= value >= 0.")
     db.add_all([db_area])
     db.commit()
@@ -108,12 +110,12 @@ def get_building(building_id: int,db: Session = Depends(get_db)):
 
 @app.get("/buildings/{building_id}/areas")
 def get_building_areas(building_id: int, db: Session = Depends(get_db)):
-    areas = db.query(Area).all()
+    areas = db.query(Area).filter(Area.building_id==building_id).all()
     return areas
 
 @app.get("/buildings/{building_id}/areas/{area_id}")
 def get_building_area(building_id: int, area_id: int,db: Session = Depends(get_db)):
-    area = db.query(Area).filter(Area.id == area_id).first()
+    area = db.query(Area).filter(Area.id == area_id, Area.building_id==building_id).first()
     if area is None:
         raise HTTPException(status_code=404)
     return area
@@ -125,10 +127,8 @@ def update_area(building_id: int, area_id: int,area: AreaLight, db: Session = De
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
     if db_area is None:
         raise HTTPException(status_code=404)
-    if db_area.temp_value >= 40 or db_area.temp_value <= 0:
-        raise ValueError("Invalid value. Expected 40 >= value >= 0.")
-    if db_area.light_value > 100 or db_area.light_value < 0:
-        raise ValueError("Invalid value. Expected 100 >= value >= 0.")
+    if db_area.light_value >= 100 or db_area.light_value < -1:
+        raise ValueError("Invalid value. Expected 100 >= int(value) >= 0.")
     db_area.light_value = area.light_value
     db.commit()
     db.refresh(db_area)
@@ -141,10 +141,8 @@ def update_area(building_id: int, area_id: int,area: AreaTemp, db: Session = Dep
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
     if db_area is None:
         raise HTTPException(status_code=404)
-    if db_area.temp_value >= 40 or db_area.temp_value <= 0:
-        raise ValueError("Invalid value. Expected 40 >= value >= 0.")
-    if db_area.light_value > 100 or db_area.light_value < 0:
-        raise ValueError("Invalid value. Expected 100 >= value >= 0.")
+    if db_area.temp_value >= 40 or db_area.temp_value < -1:
+        raise ValueError("Invalid value. Expected 40 >= int(value) >= 0.")
     db_area.temp_value = area.temp_value
     db.commit()
     db.refresh(db_area)
