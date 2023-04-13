@@ -1,19 +1,15 @@
 from fastapi import FastAPI
 import uvicorn
-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, String, Column, CheckConstraint
-
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-
 from sqlalchemy import create_engine
-
 from sqlalchemy.orm import sessionmaker 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi import Depends
-
+from fastapi.exceptions import HTTPException
 #Creating classes for buidling + area 
 Base = declarative_base()
 
@@ -27,8 +23,8 @@ class Area(Base):
     __tablename__ = 'areas'
     id = Column(Integer, primary_key = True)
     name = Column(String(255))
-    light_value = Column(Integer)#, CheckConstraint('light_value >= 0 AND light_value <= 100'))
-    temp_value = Column(Integer)#, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
+    light_value = Column(Integer, CheckConstraint('light_value >= 0 AND light_value <= 100'))
+    temp_value = Column(Integer, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
     building_id = Column(Integer, ForeignKey('buildings.id'))
     building = relationship("Building", back_populates='areas')
 
@@ -102,6 +98,8 @@ def get_buildings(db: Session = Depends(get_db)):
 @app.get("/buildings/{building_id}")
 def get_building(building_id: int,db: Session = Depends(get_db)):
     building = db.query(Building).filter(Building.id == building_id).first()
+    if building is None:
+        raise HTTPException(status_code=404)
     return building
 
 @app.get("/buildings/{building_id}/areas")
@@ -112,6 +110,8 @@ def get_building_areas(building_id: int, db: Session = Depends(get_db)):
 @app.get("/buildings/{building_id}/areas/{area_id}")
 def get_building_area(building_id: int, area_id: int,db: Session = Depends(get_db)):
     area = db.query(Area).filter(Area.id == area_id).first()
+    if area is None:
+        raise HTTPException(status_code=404)
     return area
 
 
@@ -119,6 +119,8 @@ def get_building_area(building_id: int, area_id: int,db: Session = Depends(get_d
 @app.patch("/buildings/{building_id}/areas/{area_id}")
 def update_area(building_id: int, area_id: int,area: AreaLight, db: Session = Depends(get_db)):
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
+    if db_area is None:
+        raise HTTPException(status_code=404)
     db_area.light_value = area.light_value
     db.commit()
     db.refresh(db_area)
@@ -129,6 +131,8 @@ def update_area(building_id: int, area_id: int,area: AreaLight, db: Session = De
 @app.patch("/buildings/{building_id}/areas/{area_id}")
 def update_area(building_id: int, area_id: int,area: AreaTemp, db: Session = Depends(get_db)):
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
+    if db_area is None:
+        raise HTTPException(status_code=404)
     db_area.temp_value = area.temp_value
     db.commit()
     db.refresh(db_area)
@@ -138,6 +142,8 @@ def update_area(building_id: int, area_id: int,area: AreaTemp, db: Session = Dep
 @app.delete("/buildings/{building_id}")
 def delete_building(building_id: int, db: Session = Depends(get_db)):
     db_building = db.query(Building).filter(Building.id == building_id).first()
+    if db_building is None:
+        raise HTTPException(status_code=404)
     db.delete(db_building)
     db.commit()
     db.flush()
@@ -146,7 +152,10 @@ def delete_building(building_id: int, db: Session = Depends(get_db)):
 @app.delete("/buildings/{building_id}/areas/{area_id}")
 def delete_building_area(building_id: int, area_id:int, db: Session = Depends(get_db)):
     db_area = db.query(Area).filter(Area.id == area_id, Area.building_id == building_id).first()
-    db.delete(db_area)
-    db.commit()
-    db.flush()
+    if db_area is None:
+        raise HTTPException(status_code=404)
+    else:
+        db.delete(db_area)
+        db.commit()
+        db.flush()
     return {"message":f"Deleted area {area_id} in building {building_id}."}
