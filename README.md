@@ -14,6 +14,8 @@ ORM: SQLALCHEMY,
 DATABASE: SQLITE
 
 BEFORE RUNNING THE APPLICATION:
+
+
 pip install fastapi 
  
 pip install fastapi.exceptions
