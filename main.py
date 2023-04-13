@@ -2,7 +2,10 @@ from fastapi import FastAPI
 import uvicorn
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Integer, String, Column, ForeignKey, CheckConstraint
+from sqlalchemy import Integer, String, Column, CheckConstraint
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Relationship
 
 #Creating tables for buidling + area 
 Base = declarative_base()
@@ -11,13 +14,16 @@ class Building(Base):
     __tablename__ = 'buildings'
     id = Column(Integer, primary_key = True)
     name = Column(String(255), unique=True)
+    areas = Relationship("Area", back_populates='buildings')
     
 class Area(Base):
-    __tablename__ = 'area'
+    __tablename__ = 'areas'
     id = Column(Integer, primary_key = True)
     name = Column(String(255))
     light_value = Column(Integer, CheckConstraint('lightvalue >= 0 AND lighvalue <= 100'))
     temp_value = Column(Integer, CheckConstraint('temp_value >= 0 AND temp_value <= 40'))
+    building_id = Column(Integer, ForeignKey('buildings.id'))
+    building = Relationship("Building", back_populates='areas')
 
 #Creating the fastapi app side
 
